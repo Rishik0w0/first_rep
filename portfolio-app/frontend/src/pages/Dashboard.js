@@ -1,288 +1,278 @@
-import React, { useState, useEffect } from 'react';
-import { searchStock, addStock, getPortfolio, formatCurrency, formatPercent } from '../services/api';
+import React, { useState, useContext, useEffect } from 'react';
+import { AppContext } from '../App';
+import { Line, Doughnut } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
 import './Dashboard.css';
 
-const Dashboard = ({ settings }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResult, setSearchResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  // Purchase form state
-  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
-  const [purchaseData, setPurchaseData] = useState({
-    quantity: '',
-    buyPrice: '',
-    purchaseDate: new Date().toISOString().split('T')[0]
-  });
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
-  // Portfolio summary state
-  const [portfolioSummary, setPortfolioSummary] = useState(null);
+const Dashboard = () => {
+  const { user, marketData, settings } = useContext(AppContext);
+  const [portfolioValue, setPortfolioValue] = useState(125000);
+  const [dailyPnL, setDailyPnL] = useState(2345.67);
+  const [totalPnL, setTotalPnL] = useState(15678.90);
 
-  useEffect(() => {
-    loadPortfolioSummary();
-  }, []);
+  const portfolioData = [
+    { symbol: 'AAPL', name: 'Apple Inc.', shares: 50, avgPrice: 175.50, currentPrice: 189.45, value: 9472.50, pnl: 694.50 },
+    { symbol: 'TSLA', name: 'Tesla Inc.', shares: 25, avgPrice: 245.30, currentPrice: 234.56, value: 5864.00, pnl: -268.50 },
+    { symbol: 'MSFT', name: 'Microsoft Corp.', shares: 30, avgPrice: 365.20, currentPrice: 378.90, value: 11367.00, pnl: 411.00 },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.', shares: 15, avgPrice: 138.90, currentPrice: 142.67, value: 2140.05, pnl: 56.55 },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.', shares: 20, avgPrice: 148.75, currentPrice: 145.24, value: 2904.80, pnl: -70.20 }
+  ];
 
-  const loadPortfolioSummary = async () => {
-    try {
-      const response = await getPortfolio();
-      if (response.success) {
-        setPortfolioSummary(response.data.summary);
-      }
-    } catch (error) {
-      console.error('Error loading portfolio summary:', error);
-    }
+  const chartData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    datasets: [
+      {
+        label: 'Portfolio Value',
+        data: [100000, 105000, 112000, 108000, 115000, 118000, 122000, 125000, 128000, 132000, 135000, 125000],
+        borderColor: '#3498db',
+        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+      },
+    ],
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setLoading(true);
-    setError('');
-    setSearchResult(null);
-
-    try {
-      const response = await searchStock(searchQuery.trim());
-      if (response.success) {
-        setSearchResult(response.data);
-      }
-    } catch (error) {
-      setError(error.message || 'Failed to search stock');
-    } finally {
-      setLoading(false);
-    }
+  const allocationData = {
+    labels: ['Technology', 'Consumer', 'Healthcare', 'Financial', 'Energy'],
+    datasets: [
+      {
+        data: [45, 25, 15, 10, 5],
+        backgroundColor: [
+          '#3498db',
+          '#e74c3c',
+          '#2ecc71',
+          '#f39c12',
+          '#9b59b6'
+        ],
+        borderWidth: 2,
+        borderColor: '#fff',
+      },
+    ],
   };
 
-  const handleBuyClick = () => {
-    if (searchResult) {
-      setPurchaseData({
-        ...purchaseData,
-        buyPrice: searchResult.currentPrice.toString()
-      });
-      setShowPurchaseForm(true);
-    }
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+      },
+    },
+    scales: {
+      x: {
+        display: true,
+        grid: {
+          display: false,
+        },
+      },
+      y: {
+        display: true,
+        position: 'right',
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+    interaction: {
+      mode: 'nearest',
+      axis: 'x',
+      intersect: false,
+    },
   };
 
-  const handlePurchase = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const stockData = {
-        symbol: searchResult.symbol,
-        quantity: parseFloat(purchaseData.quantity),
-        buyPrice: parseFloat(purchaseData.buyPrice),
-        purchaseDate: purchaseData.purchaseDate
-      };
-
-      const response = await addStock(stockData);
-      if (response.success) {
-        setSuccess(`Successfully added ${purchaseData.quantity} shares of ${searchResult.symbol} to your portfolio!`);
-        setShowPurchaseForm(false);
-        setPurchaseData({
-          quantity: '',
-          buyPrice: '',
-          purchaseDate: new Date().toISOString().split('T')[0]
-        });
-        loadPortfolioSummary(); // Refresh portfolio summary
-      }
-    } catch (error) {
-      setError(error.message || 'Failed to add stock to portfolio');
-    } finally {
-      setLoading(false);
-    }
+  const doughnutOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+        },
+      },
+    },
   };
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-container">
+    <div className="dashboard-page">
+      <div className="dashboard-header">
         <h1 className="page-title">Dashboard</h1>
+        <div className="dashboard-actions">
+          <button className="btn btn-outline">Export Report</button>
+          <button className="btn btn-primary">Refresh Data</button>
+        </div>
+      </div>
 
-        {/* Portfolio Summary */}
-        {portfolioSummary && (
-          <div className="portfolio-summary">
-            <h2>Portfolio Overview</h2>
-            <div className="summary-cards">
-              <div className="summary-card">
-                <div className="card-label">Total Value</div>
-                <div className="card-value">
-                  {formatCurrency(portfolioSummary.totalValue, settings.currency)}
-                </div>
+      <div className="dashboard-stats">
+        <div className="stat-card">
+          <div className="stat-icon">💰</div>
+          <div className="stat-content">
+            <h3 className="stat-label">Portfolio Value</h3>
+            <p className="stat-value">${portfolioValue.toLocaleString()}</p>
+            <span className={`stat-change ${dailyPnL >= 0 ? 'positive' : 'negative'}`}>
+              {dailyPnL >= 0 ? '+' : ''}${dailyPnL.toFixed(2)} today
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon">📈</div>
+          <div className="stat-content">
+            <h3 className="stat-label">Total P&L</h3>
+            <p className="stat-value">${totalPnL.toLocaleString()}</p>
+            <span className={`stat-change ${totalPnL >= 0 ? 'positive' : 'negative'}`}>
+              {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)} all time
+            </span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon">💼</div>
+          <div className="stat-content">
+            <h3 className="stat-label">Available Cash</h3>
+            <p className="stat-value">${user.balance?.toLocaleString()}</p>
+            <span className="stat-change">Ready to invest</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-icon">📊</div>
+          <div className="stat-content">
+            <h3 className="stat-label">Market Status</h3>
+            <p className="stat-value">Open</p>
+            <span className="stat-change positive">Live trading</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-content">
+        <div className="dashboard-main">
+          <div className="chart-section">
+            <div className="section-header">
+              <h2 className="section-title">Portfolio Performance</h2>
+              <div className="chart-controls">
+                <button className="chart-btn active">1Y</button>
+                <button className="chart-btn">6M</button>
+                <button className="chart-btn">3M</button>
+                <button className="chart-btn">1M</button>
               </div>
-              <div className="summary-card">
-                <div className="card-label">Total Cost</div>
-                <div className="card-value">
-                  {formatCurrency(portfolioSummary.totalCost, settings.currency)}
-                </div>
+            </div>
+            <div className="chart-container">
+              <Line data={chartData} options={chartOptions} />
+            </div>
+          </div>
+
+          <div className="portfolio-section">
+            <div className="section-header">
+              <h2 className="section-title">Portfolio Holdings</h2>
+              <button className="btn btn-sm btn-outline">View All</button>
+            </div>
+            <div className="portfolio-table">
+              <div className="table-header">
+                <div className="table-cell">Stock</div>
+                <div className="table-cell">Shares</div>
+                <div className="table-cell">Avg Price</div>
+                <div className="table-cell">Current</div>
+                <div className="table-cell">Value</div>
+                <div className="table-cell">P&L</div>
               </div>
-              <div className="summary-card">
-                <div className="card-label">Gain/Loss</div>
-                <div className={`card-value ${portfolioSummary.totalGainLoss >= 0 ? 'positive' : 'negative'}`}>
-                  {formatCurrency(portfolioSummary.totalGainLoss, settings.currency)}
-                  <span className="percentage">
-                    ({formatPercent(portfolioSummary.totalGainLossPercent)})
-                  </span>
-                </div>
-              </div>
-              <div className="summary-card">
-                <div className="card-label">Holdings</div>
-                <div className="card-value">{portfolioSummary.holdingsCount}</div>
+              <div className="table-body">
+                {portfolioData.map(stock => (
+                  <div key={stock.symbol} className="table-row">
+                    <div className="table-cell stock-cell">
+                      <div className="stock-info">
+                        <strong>{stock.symbol}</strong>
+                        <span className="stock-name">{stock.name}</span>
+                      </div>
+                    </div>
+                    <div className="table-cell">{stock.shares}</div>
+                    <div className="table-cell">${stock.avgPrice}</div>
+                    <div className="table-cell">${stock.currentPrice}</div>
+                    <div className="table-cell">${stock.value.toLocaleString()}</div>
+                    <div className={`table-cell ${stock.pnl >= 0 ? 'positive' : 'negative'}`}>
+                      {stock.pnl >= 0 ? '+' : ''}${stock.pnl.toFixed(2)}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Stock Search */}
-        <div className="search-section">
-          <h2>Search & Buy Stocks</h2>
-          
-          <form onSubmit={handleSearch} className="search-form">
-            <div className="search-input-group">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Enter stock symbol (e.g., AAPL, GOOGL, MSFT)"
-                className="search-input"
-                disabled={loading}
-              />
-              <button 
-                type="submit" 
-                className="search-button"
-                disabled={loading || !searchQuery.trim()}
-              >
-                {loading ? 'Searching...' : 'Search'}
-              </button>
+        <div className="dashboard-sidebar">
+          <div className="allocation-section">
+            <h3 className="sidebar-title">Asset Allocation</h3>
+            <div className="chart-container">
+              <Doughnut data={allocationData} options={doughnutOptions} />
             </div>
-          </form>
+          </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="error-message">
-              <span className="error-icon">❌</span>
-              {error}
-            </div>
-          )}
-
-          {/* Success Message */}
-          {success && (
-            <div className="success-message">
-              <span className="success-icon">✅</span>
-              {success}
-            </div>
-          )}
-
-          {/* Search Result */}
-          {searchResult && (
-            <div className="search-result">
-              <div className="stock-info">
-                <div className="stock-header">
-                  <h3 className="stock-symbol">{searchResult.symbol}</h3>
-                  <span className="stock-name">{searchResult.name}</span>
+          <div className="market-section">
+            <h3 className="sidebar-title">Market Indices</h3>
+            <div className="market-list">
+              {marketData.indices.map(index => (
+                <div key={index.symbol} className="market-item">
+                  <div className="market-info">
+                    <span className="market-symbol">{index.symbol}</span>
+                    <span className="market-name">{index.name}</span>
+                  </div>
+                  <div className="market-price">
+                    <span className="price-value">{index.price.toLocaleString()}</span>
+                    <span className={`price-change ${index.change >= 0 ? 'positive' : 'negative'}`}>
+                      {index.change >= 0 ? '+' : ''}{index.change.toFixed(2)} ({index.changePercent}%)
+                    </span>
+                  </div>
                 </div>
-                
-                <div className="stock-price">
-                  <span className="current-price">
-                    {formatCurrency(searchResult.currentPrice, settings.currency)}
-                  </span>
-                  <span className={`price-change ${searchResult.change >= 0 ? 'positive' : 'negative'}`}>
-                    {formatPercent(parseFloat(searchResult.changePercent))}
-                  </span>
-                </div>
-
-                <div className="stock-actions">
-                  <button 
-                    className="buy-button"
-                    onClick={handleBuyClick}
-                    disabled={loading}
-                  >
-                    Buy Stock
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
-          )}
+          </div>
 
-          {/* Purchase Form */}
-          {showPurchaseForm && searchResult && (
-            <div className="purchase-form-overlay">
-              <div className="purchase-form">
-                <h3>Buy {searchResult.symbol}</h3>
-                
-                <form onSubmit={handlePurchase}>
-                  <div className="form-group">
-                    <label>Quantity</label>
-                    <input
-                      type="number"
-                      value={purchaseData.quantity}
-                      onChange={(e) => setPurchaseData({...purchaseData, quantity: e.target.value})}
-                      placeholder="Number of shares"
-                      min="0.0001"
-                      step="0.0001"
-                      required
-                    />
+          <div className="trending-section">
+            <h3 className="sidebar-title">Trending Stocks</h3>
+            <div className="trending-list">
+              {marketData.trending.map(stock => (
+                <div key={stock.symbol} className="trending-item">
+                  <div className="trending-info">
+                    <span className="trending-symbol">{stock.symbol}</span>
+                    <span className="trending-name">{stock.name}</span>
                   </div>
-
-                  <div className="form-group">
-                    <label>Buy Price ({settings.currency})</label>
-                    <input
-                      type="number"
-                      value={purchaseData.buyPrice}
-                      onChange={(e) => setPurchaseData({...purchaseData, buyPrice: e.target.value})}
-                      placeholder="Price per share"
-                      min="0.01"
-                      step="0.01"
-                      required
-                    />
+                  <div className="trending-price">
+                    <span className="price-value">${stock.price}</span>
+                    <span className={`price-change ${stock.change >= 0 ? 'positive' : 'negative'}`}>
+                      {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)} ({stock.changePercent}%)
+                    </span>
                   </div>
-
-                  <div className="form-group">
-                    <label>Purchase Date</label>
-                    <input
-                      type="date"
-                      value={purchaseData.purchaseDate}
-                      onChange={(e) => setPurchaseData({...purchaseData, purchaseDate: e.target.value})}
-                      max={new Date().toISOString().split('T')[0]}
-                      required
-                    />
-                  </div>
-
-                  {purchaseData.quantity && purchaseData.buyPrice && (
-                    <div className="total-cost">
-                      <strong>
-                        Total Cost: {formatCurrency(
-                          parseFloat(purchaseData.quantity) * parseFloat(purchaseData.buyPrice),
-                          settings.currency
-                        )}
-                      </strong>
-                    </div>
-                  )}
-
-                  <div className="form-actions">
-                    <button 
-                      type="button" 
-                      className="cancel-button"
-                      onClick={() => setShowPurchaseForm(false)}
-                      disabled={loading}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="confirm-button"
-                      disabled={loading}
-                    >
-                      {loading ? 'Adding...' : 'Add to Portfolio'}
-                    </button>
-                  </div>
-                </form>
-              </div>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
