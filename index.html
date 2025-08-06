@@ -3,10 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Portfolio Manager</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <p>hello world!</p>
-    <p>hello world 2!</p>
+    <div class="app" id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-container">
+                <div class="logo">
+                    <span class="logo-icon">📊</span>
+                    <span class="logo-text">Portfolio Manager</span>
+                </div>
+                
+                <nav class="nav">
+                    <button class="nav-btn active" data-page="dashboard">Dashboard</button>
+                    <button class="nav-btn" data-page="portfolio">Portfolio</button>
+                    <button class="nav-btn" data-page="settings">Settings</button>
+                </nav>
+                
+                <div class="header-controls">
+                    <div class="mode-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="proModeToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label" id="proModeLabel">Normal</span>
+                    </div>
+                    
+                    <div class="theme-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">🌙</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div class="page active" id="dashboard">
+                <h1 class="page-title">Dashboard</h1>
+                <p class="page-description">Manage your stock portfolio</p>
+                
+                <div class="dashboard-content">
+                    <div class="search-section">
+                        <h2>Search Stocks</h2>
+                        <div class="search-form">
+                            <input type="text" id="stockSearch" placeholder="Enter stock symbol (e.g., AAPL)">
+                            <button id="searchBtn" class="btn btn-primary">Search</button>
+                        </div>
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
+                    
+                    <div class="portfolio-summary">
+                        <h2>Portfolio Summary</h2>
+                        <div class="summary-cards">
+                            <div class="summary-card">
+                                <div class="card-label">Total Value</div>
+                                <div class="card-value" id="totalValue">$0.00</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-label">Total Cost</div>
+                                <div class="card-value" id="totalCost">$0.00</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-label">Gain/Loss</div>
+                                <div class="card-value" id="totalGainLoss">$0.00</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="card-label">Holdings</div>
+                                <div class="card-value" id="holdingsCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Page -->
+            <div class="page" id="portfolio">
+                <h1 class="page-title">Portfolio</h1>
+                <p class="page-description">View your current holdings</p>
+                
+                <div class="portfolio-content">
+                    <div class="holdings-container">
+                        <h2>Current Holdings</h2>
+                        <div id="holdingsList" class="holdings-list">
+                            <!-- Holdings will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div class="page" id="settings">
+                <h1 class="page-title">Settings</h1>
+                <p class="page-description">Customize your experience</p>
+                
+                <div class="settings-content">
+                    <div class="settings-section">
+                        <h2>Display Preferences</h2>
+                        <div class="setting-item">
+                            <label for="currencySelect">Currency:</label>
+                            <select id="currencySelect" class="form-select">
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="JPY">JPY (¥)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="darkModeSetting">
+                                <span class="checkbox-custom"></span>
+                                Dark Mode
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="proModeSetting">
+                                <span class="checkbox-custom"></span>
+                                Pro Mode
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-actions">
+                        <button id="saveSettings" class="btn btn-primary">Save Settings</button>
+                        <button id="resetSettings" class="btn btn-secondary">Reset to Defaults</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Stock Modal -->
+    <div id="addStockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Stock</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="addStockForm">
+                    <div class="form-group">
+                        <label for="stockSymbol">Symbol:</label>
+                        <input type="text" id="stockSymbol" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stockQuantity">Quantity:</label>
+                        <input type="number" id="stockQuantity" min="0" step="0.0001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stockPrice">Buy Price:</label>
+                        <input type="number" id="stockPrice" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stockDate">Purchase Date:</label>
+                        <input type="date" id="stockDate" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Add Stock</button>
+                        <button type="button" class="btn btn-secondary" id="cancelAdd">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
