@@ -1,115 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import React, { useState, useContext, useEffect } from 'react';
+import { AppContext } from '../App';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
-  Filler
 } from 'chart.js';
-import { 
-  getPortfolio, 
-  getPortfolioHistory, 
-  deleteStock,
-  formatCurrency, 
-  formatPercent, 
-  formatDate 
-} from '../services/api';
 import './Portfolio.css';
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
-  Legend,
-  Filler
+  Legend
 );
 
-const Portfolio = ({ settings }) => {
-  const [portfolio, setPortfolio] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [portfolioHistory, setPortfolioHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedPeriod, setSelectedPeriod] = useState('1Y');
+const Portfolio = () => {
+  const { user, settings } = useContext(AppContext);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('1Y');
+  const [selectedView, setSelectedView] = useState('holdings');
 
-  const periods = [
-    { value: '1M', label: '1 Month' },
-    { value: '3M', label: '3 Months' },
-    { value: '6M', label: '6 Months' },
-    { value: '1Y', label: '1 Year' },
-    { value: '2Y', label: '2 Years' }
+  const portfolioData = [
+    { symbol: 'AAPL', name: 'Apple Inc.', shares: 50, avgPrice: 175.50, currentPrice: 189.45, value: 9472.50, pnl: 694.50, pnlPercent: 7.9, sector: 'Technology' },
+    { symbol: 'TSLA', name: 'Tesla Inc.', shares: 25, avgPrice: 245.30, currentPrice: 234.56, value: 5864.00, pnl: -268.50, pnlPercent: -4.4, sector: 'Automotive' },
+    { symbol: 'MSFT', name: 'Microsoft Corp.', shares: 30, avgPrice: 365.20, currentPrice: 378.90, value: 11367.00, pnl: 411.00, pnlPercent: 3.8, sector: 'Technology' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.', shares: 15, avgPrice: 138.90, currentPrice: 142.67, value: 2140.05, pnl: 56.55, pnlPercent: 2.7, sector: 'Technology' },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.', shares: 20, avgPrice: 148.75, currentPrice: 145.24, value: 2904.80, pnl: -70.20, pnlPercent: -2.4, sector: 'Consumer Discretionary' },
+    { symbol: 'JPM', name: 'JPMorgan Chase & Co.', shares: 10, avgPrice: 165.80, currentPrice: 167.89, value: 1678.90, pnl: 20.90, pnlPercent: 1.3, sector: 'Financial' },
+    { symbol: 'JNJ', name: 'Johnson & Johnson', shares: 12, avgPrice: 155.20, currentPrice: 156.78, value: 1881.36, pnl: 18.96, pnlPercent: 1.2, sector: 'Healthcare' }
   ];
 
-  useEffect(() => {
-    loadPortfolioData();
-  }, []);
+  const totalValue = portfolioData.reduce((sum, stock) => sum + stock.value, 0);
+  const totalPnL = portfolioData.reduce((sum, stock) => sum + stock.pnl, 0);
+  const totalPnLPercent = (totalPnL / (totalValue - totalPnL)) * 100;
 
-  useEffect(() => {
-    loadPortfolioHistory();
-  }, [selectedPeriod]);
-
-  const loadPortfolioData = async () => {
-    try {
-      setLoading(true);
-      const response = await getPortfolio();
-      if (response.success) {
-        setPortfolio(response.data.holdings);
-        setSummary(response.data.summary);
-      }
-    } catch (error) {
-      setError(error.message || 'Failed to load portfolio');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadPortfolioHistory = async () => {
-    try {
-      const response = await getPortfolioHistory(selectedPeriod);
-      if (response.success) {
-        setPortfolioHistory(response.data);
-      }
-    } catch (error) {
-      console.error('Error loading portfolio history:', error);
-    }
-  };
-
-  const handleDeleteStock = async (id, symbol) => {
-    if (window.confirm(`Are you sure you want to remove ${symbol} from your portfolio?`)) {
-      try {
-        await deleteStock(id);
-        loadPortfolioData(); // Refresh data
-      } catch (error) {
-        setError(error.message || 'Failed to delete stock');
-      }
-    }
-  };
-
-  // Chart configuration
-  const chartData = {
-    labels: portfolioHistory.map(item => formatDate(item.date)),
+  const performanceData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     datasets: [
       {
         label: 'Portfolio Value',
-        data: portfolioHistory.map(item => item.value),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        data: [100000, 105000, 112000, 108000, 115000, 118000, 122000, 125000, 128000, 132000, 135000, 125000],
+        borderColor: '#3498db',
+        backgroundColor: 'rgba(52, 152, 219, 0.1)',
         borderWidth: 2,
         fill: true,
         tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-      }
-    ]
+      },
+    ],
+  };
+
+  const sectorData = {
+    labels: ['Technology', 'Consumer', 'Healthcare', 'Financial', 'Automotive'],
+    datasets: [
+      {
+        label: 'Allocation (%)',
+        data: [45, 15, 10, 8, 22],
+        backgroundColor: [
+          '#3498db',
+          '#e74c3c',
+          '#2ecc71',
+          '#f39c12',
+          '#9b59b6'
+        ],
+        borderWidth: 1,
+        borderColor: '#fff',
+      },
+    ],
   };
 
   const chartOptions = {
@@ -117,241 +83,325 @@ const Portfolio = ({ settings }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false
-      },
-      title: {
-        display: true,
-        text: `Portfolio Performance (${selectedPeriod})`,
-        font: {
-          size: 16,
-          weight: 'bold'
-        }
+        display: false,
       },
       tooltip: {
         mode: 'index',
         intersect: false,
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: 'white',
-        bodyColor: 'white',
-        borderColor: 'rgba(59, 130, 246, 0.5)',
-        borderWidth: 1,
-        callbacks: {
-          label: function(context) {
-            return `Value: ${formatCurrency(context.parsed.y, settings.currency)}`;
-          }
-        }
-      }
+      },
     },
     scales: {
       x: {
         display: true,
         grid: {
-          display: false
+          display: false,
         },
-        ticks: {
-          maxTicksLimit: 8
-        }
       },
       y: {
         display: true,
+        position: 'right',
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
+          color: 'rgba(0, 0, 0, 0.1)',
         },
-        ticks: {
-          callback: function(value) {
-            return formatCurrency(value, settings.currency);
-          }
-        }
-      }
+      },
     },
     interaction: {
+      mode: 'nearest',
+      axis: 'x',
       intersect: false,
-      mode: 'index'
-    }
+    },
   };
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading portfolio...</p>
-      </div>
-    );
-  }
+  const barOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      x: {
+        display: true,
+        grid: {
+          display: false,
+        },
+      },
+      y: {
+        display: true,
+        position: 'right',
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
+    },
+  };
+
+  const timeframes = [
+    { value: '1M', label: '1 Month' },
+    { value: '3M', label: '3 Months' },
+    { value: '6M', label: '6 Months' },
+    { value: '1Y', label: '1 Year' },
+    { value: 'ALL', label: 'All Time' }
+  ];
+
+  const views = [
+    { value: 'holdings', label: 'Holdings', icon: '💼' },
+    { value: 'performance', label: 'Performance', icon: '📈' },
+    { value: 'allocation', label: 'Allocation', icon: '🥧' },
+    { value: 'transactions', label: 'Transactions', icon: '📋' }
+  ];
 
   return (
-    <div className="portfolio">
-      <div className="portfolio-container">
+    <div className="portfolio-page">
+      <div className="portfolio-header">
         <h1 className="page-title">Portfolio</h1>
+        <div className="portfolio-actions">
+          <button className="btn btn-outline">Export</button>
+          <button className="btn btn-primary">Add Position</button>
+        </div>
+      </div>
 
-        {error && (
-          <div className="error-message">
-            <span className="error-icon">❌</span>
-            {error}
+      <div className="portfolio-overview">
+        <div className="overview-card">
+          <div className="overview-icon">💰</div>
+          <div className="overview-content">
+            <h3 className="overview-label">Total Value</h3>
+            <p className="overview-value">${totalValue.toLocaleString()}</p>
+            <span className={`overview-change ${totalPnL >= 0 ? 'positive' : 'negative'}`}>
+              {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)} ({totalPnLPercent.toFixed(2)}%)
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* Portfolio Summary */}
-        {summary && (
-          <div className="portfolio-summary">
-            <div className="summary-cards">
-              <div className="summary-card">
-                <div className="card-label">Total Value</div>
-                <div className="card-value">
-                  {formatCurrency(summary.totalValue, settings.currency)}
+        <div className="overview-card">
+          <div className="overview-icon">📊</div>
+          <div className="overview-content">
+            <h3 className="overview-label">Total Cost</h3>
+            <p className="overview-value">${(totalValue - totalPnL).toLocaleString()}</p>
+            <span className="overview-change">Basis</span>
+          </div>
+        </div>
+
+        <div className="overview-card">
+          <div className="overview-icon">📈</div>
+          <div className="overview-content">
+            <h3 className="overview-label">Total P&L</h3>
+            <p className="overview-value">${totalPnL.toLocaleString()}</p>
+            <span className={`overview-change ${totalPnL >= 0 ? 'positive' : 'negative'}`}>
+              {totalPnLPercent >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="overview-card">
+          <div className="overview-icon">💼</div>
+          <div className="overview-content">
+            <h3 className="overview-label">Positions</h3>
+            <p className="overview-value">{portfolioData.length}</p>
+            <span className="overview-change">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="portfolio-content">
+        <div className="portfolio-main">
+          <div className="view-selector">
+            {views.map(view => (
+              <button
+                key={view.value}
+                className={`view-btn ${selectedView === view.value ? 'active' : ''}`}
+                onClick={() => setSelectedView(view.value)}
+              >
+                <span className="view-icon">{view.icon}</span>
+                <span className="view-label">{view.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {selectedView === 'holdings' && (
+            <div className="holdings-section">
+              <div className="section-header">
+                <h2 className="section-title">Portfolio Holdings</h2>
+                <div className="timeframe-selector">
+                  {timeframes.map(tf => (
+                    <button
+                      key={tf.value}
+                      className={`timeframe-btn ${selectedTimeframe === tf.value ? 'active' : ''}`}
+                      onClick={() => setSelectedTimeframe(tf.value)}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="summary-card">
-                <div className="card-label">Total Cost</div>
-                <div className="card-value">
-                  {formatCurrency(summary.totalCost, settings.currency)}
-                </div>
-              </div>
-              <div className="summary-card">
-                <div className="card-label">Gain/Loss</div>
-                <div className={`card-value ${summary.totalGainLoss >= 0 ? 'positive' : 'negative'}`}>
-                  {formatCurrency(summary.totalGainLoss, settings.currency)}
-                  <span className="percentage">
-                    ({formatPercent(summary.totalGainLossPercent)})
-                  </span>
-                </div>
-              </div>
-              <div className="summary-card">
-                <div className="card-label">Holdings</div>
-                <div className="card-value">{summary.holdingsCount}</div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Portfolio Chart */}
-        {portfolioHistory.length > 0 && (
-          <div className="chart-section">
-            <div className="chart-header">
-              <h2>Portfolio Performance</h2>
-              <div className="period-selector">
-                {periods.map(period => (
-                  <button
-                    key={period.value}
-                    className={`period-button ${selectedPeriod === period.value ? 'active' : ''}`}
-                    onClick={() => setSelectedPeriod(period.value)}
-                  >
-                    {period.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="chart-container">
-              <Line data={chartData} options={chartOptions} />
-            </div>
-          </div>
-        )}
-
-        {/* Holdings Table */}
-        <div className="holdings-section">
-          <h2>Current Holdings</h2>
-          
-          {portfolio.length === 0 ? (
-            <div className="empty-portfolio">
-              <div className="empty-icon">📊</div>
-              <h3>No Holdings Yet</h3>
-              <p>Start building your portfolio by adding stocks from the Dashboard or Assets page.</p>
-            </div>
-          ) : (
-            <div className="holdings-table-container">
-              {settings.proMode ? (
-                // Pro Mode - Detailed Table
-                <table className="holdings-table pro">
-                  <thead>
-                    <tr>
-                      <th>Symbol</th>
-                      <th>Quantity</th>
-                      <th>Buy Price</th>
-                      <th>Current Price</th>
-                      <th>Total Cost</th>
-                      <th>Current Value</th>
-                      <th>Gain/Loss</th>
-                      <th>%</th>
-                      <th>Purchase Date</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {portfolio.map((holding) => (
-                      <tr key={holding.id}>
-                        <td className="symbol-cell">
-                          <strong>{holding.symbol}</strong>
-                        </td>
-                        <td>{holding.quantity}</td>
-                        <td>{formatCurrency(holding.buy_price, settings.currency)}</td>
-                        <td>{formatCurrency(holding.currentPrice, settings.currency)}</td>
-                        <td>{formatCurrency(holding.totalCost, settings.currency)}</td>
-                        <td>{formatCurrency(holding.totalValue, settings.currency)}</td>
-                        <td className={holding.gainLoss >= 0 ? 'positive' : 'negative'}>
-                          {formatCurrency(holding.gainLoss, settings.currency)}
-                        </td>
-                        <td className={holding.gainLossPercent >= 0 ? 'positive' : 'negative'}>
-                          {formatPercent(holding.gainLossPercent)}
-                        </td>
-                        <td>{formatDate(holding.purchase_date)}</td>
-                        <td>
-                          <button
-                            className="delete-button"
-                            onClick={() => handleDeleteStock(holding.id, holding.symbol)}
-                            title="Remove from portfolio"
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                // Normal Mode - Simplified Cards
-                <div className="holdings-cards">
-                  {portfolio.map((holding) => (
-                    <div key={holding.id} className="holding-card">
-                      <div className="card-header">
-                        <h3 className="symbol">{holding.symbol}</h3>
-                        <button
-                          className="delete-button"
-                          onClick={() => handleDeleteStock(holding.id, holding.symbol)}
-                          title="Remove from portfolio"
-                        >
-                          🗑️
-                        </button>
+              <div className="holdings-table">
+                <div className="table-header">
+                  <div className="table-cell">Stock</div>
+                  <div className="table-cell">Shares</div>
+                  <div className="table-cell">Avg Price</div>
+                  <div className="table-cell">Current</div>
+                  <div className="table-cell">Value</div>
+                  <div className="table-cell">P&L</div>
+                  <div className="table-cell">Actions</div>
+                </div>
+                <div className="table-body">
+                  {portfolioData.map(stock => (
+                    <div key={stock.symbol} className="table-row">
+                      <div className="table-cell stock-cell">
+                        <div className="stock-info">
+                          <strong>{stock.symbol}</strong>
+                          <span className="stock-name">{stock.name}</span>
+                          <span className="stock-sector">{stock.sector}</span>
+                        </div>
                       </div>
-                      
-                      <div className="card-content">
-                        <div className="card-row">
-                          <span className="label">Quantity:</span>
-                          <span className="value">{holding.quantity} shares</span>
-                        </div>
-                        <div className="card-row">
-                          <span className="label">Current Value:</span>
-                          <span className="value">
-                            {formatCurrency(holding.totalValue, settings.currency)}
+                      <div className="table-cell">{stock.shares}</div>
+                      <div className="table-cell">${stock.avgPrice}</div>
+                      <div className="table-cell">${stock.currentPrice}</div>
+                      <div className="table-cell">${stock.value.toLocaleString()}</div>
+                      <div className={`table-cell ${stock.pnl >= 0 ? 'positive' : 'negative'}`}>
+                        <div className="pnl-info">
+                          <span className="pnl-amount">
+                            {stock.pnl >= 0 ? '+' : ''}${stock.pnl.toFixed(2)}
+                          </span>
+                          <span className="pnl-percent">
+                            ({stock.pnlPercent >= 0 ? '+' : ''}{stock.pnlPercent.toFixed(1)}%)
                           </span>
                         </div>
-                        <div className="card-row">
-                          <span className="label">Gain/Loss:</span>
-                          <span className={`value ${holding.gainLoss >= 0 ? 'positive' : 'negative'}`}>
-                            {formatCurrency(holding.gainLoss, settings.currency)}
-                            ({formatPercent(holding.gainLossPercent)})
-                          </span>
-                        </div>
-                        <div className="card-row">
-                          <span className="label">Purchase Date:</span>
-                          <span className="value">{formatDate(holding.purchase_date)}</span>
-                        </div>
+                      </div>
+                      <div className="table-cell actions-cell">
+                        <button className="btn btn-sm btn-outline">Trade</button>
+                        <button className="btn btn-sm btn-secondary">Details</button>
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           )}
+
+          {selectedView === 'performance' && (
+            <div className="performance-section">
+              <div className="section-header">
+                <h2 className="section-title">Performance Chart</h2>
+                <div className="timeframe-selector">
+                  {timeframes.map(tf => (
+                    <button
+                      key={tf.value}
+                      className={`timeframe-btn ${selectedTimeframe === tf.value ? 'active' : ''}`}
+                      onClick={() => setSelectedTimeframe(tf.value)}
+                    >
+                      {tf.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="chart-container">
+                <Line data={performanceData} options={chartOptions} />
+              </div>
+            </div>
+          )}
+
+          {selectedView === 'allocation' && (
+            <div className="allocation-section">
+              <div className="section-header">
+                <h2 className="section-title">Sector Allocation</h2>
+              </div>
+              <div className="chart-container">
+                <Bar data={sectorData} options={barOptions} />
+              </div>
+            </div>
+          )}
+
+          {selectedView === 'transactions' && (
+            <div className="transactions-section">
+              <div className="section-header">
+                <h2 className="section-title">Recent Transactions</h2>
+                <button className="btn btn-sm btn-outline">View All</button>
+              </div>
+              <div className="transactions-list">
+                <div className="transaction-item">
+                  <div className="transaction-info">
+                    <span className="transaction-type buy">BUY</span>
+                    <span className="transaction-symbol">AAPL</span>
+                    <span className="transaction-details">50 shares @ $175.50</span>
+                  </div>
+                  <div className="transaction-date">Jan 15, 2024</div>
+                  <div className="transaction-amount">$8,775.00</div>
+                </div>
+                <div className="transaction-item">
+                  <div className="transaction-info">
+                    <span className="transaction-type sell">SELL</span>
+                    <span className="transaction-symbol">TSLA</span>
+                    <span className="transaction-details">10 shares @ $240.00</span>
+                  </div>
+                  <div className="transaction-date">Jan 10, 2024</div>
+                  <div className="transaction-amount">$2,400.00</div>
+                </div>
+                <div className="transaction-item">
+                  <div className="transaction-info">
+                    <span className="transaction-type buy">BUY</span>
+                    <span className="transaction-symbol">MSFT</span>
+                    <span className="transaction-details">30 shares @ $365.20</span>
+                  </div>
+                  <div className="transaction-date">Jan 5, 2024</div>
+                  <div className="transaction-amount">$10,956.00</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="portfolio-sidebar">
+          <div className="sector-breakdown">
+            <h3 className="sidebar-title">Sector Breakdown</h3>
+            <div className="sector-list">
+              {[
+                { sector: 'Technology', value: 22979.55, percentage: 45.0 },
+                { sector: 'Automotive', value: 5864.00, percentage: 22.0 },
+                { sector: 'Consumer Discretionary', value: 2904.80, percentage: 15.0 },
+                { sector: 'Healthcare', value: 1881.36, percentage: 10.0 },
+                { sector: 'Financial', value: 1678.90, percentage: 8.0 }
+              ].map(sector => (
+                <div key={sector.sector} className="sector-item">
+                  <div className="sector-info">
+                    <span className="sector-name">{sector.sector}</span>
+                    <span className="sector-value">${sector.value.toLocaleString()}</span>
+                  </div>
+                  <div className="sector-bar">
+                    <div 
+                      className="sector-fill" 
+                      style={{ width: `${sector.percentage}%` }}
+                    ></div>
+                  </div>
+                  <span className="sector-percentage">{sector.percentage}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="top-performers">
+            <h3 className="sidebar-title">Top Performers</h3>
+            <div className="performers-list">
+              {portfolioData
+                .filter(stock => stock.pnl > 0)
+                .sort((a, b) => b.pnlPercent - a.pnlPercent)
+                .slice(0, 3)
+                .map(stock => (
+                  <div key={stock.symbol} className="performer-item">
+                    <div className="performer-info">
+                      <span className="performer-symbol">{stock.symbol}</span>
+                      <span className="performer-name">{stock.name}</span>
+                    </div>
+                    <div className="performer-pnl">
+                      <span className="pnl-amount positive">+${stock.pnl.toFixed(2)}</span>
+                      <span className="pnl-percent positive">+{stock.pnlPercent.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,519 @@
+.watchlist-page {
+  padding: 0;
+}
+
+.watchlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.watchlist-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.watchlist-section,
+.available-stocks-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sort-select {
+  padding: 0.5rem;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.9rem;
+}
+
+.sort-btn {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e1e5e9;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.sort-btn:hover {
+  background: #f8f9fa;
+}
+
+.empty-watchlist {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-watchlist h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.empty-watchlist p {
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.stock-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e1e5e9;
+  transition: all 0.3s ease;
+}
+
+.stock-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.stock-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.stock-info {
+  flex: 1;
+}
+
+.stock-symbol {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 0.25rem 0;
+}
+
+.stock-name {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin: 0 0 0.5rem 0;
+}
+
+.sector-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.sector-badge.small {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #e74c3c;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-btn:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.stock-price-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.price-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.price-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.price-change {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.price-change.positive {
+  color: #27ae60;
+}
+
+.price-change.negative {
+  color: #e74c3c;
+}
+
+.stock-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-container {
+  position: relative;
+  max-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: white;
+  color: #2c3e50;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.stocks-table {
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.table-cell {
+  padding: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.table-body {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
+  border-bottom: 1px solid #e1e5e9;
+  transition: background-color 0.3s ease;
+}
+
+.table-row:hover {
+  background: #f8f9fa;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-row .table-cell {
+  padding: 1rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.symbol-cell {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.name-cell {
+  color: #6c757d;
+}
+
+.price-cell {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.change-cell {
+  font-weight: 600;
+}
+
+.change-cell.positive {
+  color: #27ae60;
+}
+
+.change-cell.negative {
+  color: #e74c3c;
+}
+
+.action-cell {
+  justify-content: center;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: #f8f9fa;
+  color: #e74c3c;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+/* Dark mode support */
+.dark-mode .page-title {
+  color: white;
+}
+
+.dark-mode .watchlist-section,
+.dark-mode .available-stocks-section {
+  background: #2c3e50;
+  color: white;
+}
+
+.dark-mode .section-title {
+  color: white;
+}
+
+.dark-mode .stock-card {
+  background: #34495e;
+  border-color: #4a5f7a;
+  color: white;
+}
+
+.dark-mode .stock-symbol {
+  color: white;
+}
+
+.dark-mode .stock-name {
+  color: #bdc3c7;
+}
+
+.dark-mode .price-value {
+  color: white;
+}
+
+.dark-mode .sort-select,
+.dark-mode .sort-btn,
+.dark-mode .search-input {
+  background: #34495e;
+  color: white;
+  border-color: #4a5f7a;
+}
+
+.dark-mode .sort-btn:hover {
+  background: #4a5f7a;
+}
+
+.dark-mode .table-header {
+  background: #34495e;
+  border-color: #4a5f7a;
+}
+
+.dark-mode .table-cell {
+  color: white;
+}
+
+.dark-mode .table-row {
+  border-color: #4a5f7a;
+}
+
+.dark-mode .table-row:hover {
+  background: #34495e;
+}
+
+.dark-mode .symbol-cell {
+  color: white;
+}
+
+.dark-mode .name-cell {
+  color: #bdc3c7;
+}
+
+.dark-mode .price-cell {
+  color: white;
+}
+
+.dark-mode .modal-content {
+  background: #2c3e50;
+  color: white;
+}
+
+.dark-mode .modal-header h3 {
+  color: white;
+}
+
+.dark-mode .modal-close {
+  color: #bdc3c7;
+}
+
+.dark-mode .modal-close:hover {
+  background: #34495e;
+  color: #e74c3c;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .watchlist-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .stock-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  
+  .table-cell:nth-child(2),
+  .table-cell:nth-child(3),
+  .table-cell:nth-child(4) {
+    display: none;
+  }
+  
+  .modal-content {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .table-header,
+  .table-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .table-cell:nth-child(5) {
+    display: none;
+  }
+}
