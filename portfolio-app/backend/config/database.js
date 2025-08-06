@@ -1,33 +1,27 @@
-const mysql = require('mysql2/promise');
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 require('dotenv').config();
 
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'portfolio_db',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-};
-
-// Create connection pool
-const pool = mysql.createPool(dbConfig);
+// Create database connection
+const dbPath = path.join(__dirname, '..', 'portfolio.db');
+const db = new sqlite3.Database(dbPath);
 
 // Test database connection
 const testConnection = async () => {
-    try {
-        const connection = await pool.getConnection();
-        console.log('✅ Database connected successfully');
-        connection.release();
-        return true;
-    } catch (error) {
-        console.error('❌ Database connection failed:', error.message);
-        return false;
-    }
+    return new Promise((resolve) => {
+        db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='user_settings'", (err, row) => {
+            if (err) {
+                console.error('❌ Database connection failed:', err.message);
+                resolve(false);
+            } else {
+                console.log('✅ Database connected successfully');
+                resolve(true);
+            }
+        });
+    });
 };
 
 module.exports = {
-    pool,
+    db,
     testConnection
 };
