@@ -1,4 +1,4 @@
-const { pool } = require('../config/database');
+const { db } = require('../config/database');
 
 class SettingsController {
     /**
@@ -7,27 +7,35 @@ class SettingsController {
      */
     async getSettings(req, res) {
         try {
-            const [rows] = await pool.execute(
-                'SELECT setting_key, setting_value FROM user_settings'
-            );
+            db.all('SELECT setting_key, setting_value FROM user_settings', (err, rows) => {
+                if (err) {
+                    console.error('Error in getSettings controller:', err);
+                    return res.status(500).json({
+                        error: 'Failed to get settings',
+                        details: err.message
+                    });
+                }
 
-            // Convert to object format
-            const settings = {};
-            rows.forEach(row => {
-                let value = row.setting_value;
-                
-                // Parse boolean values
-                if (value === 'true') value = true;
-                else if (value === 'false') value = false;
-                // Parse numeric values
-                else if (!isNaN(value) && value !== '') value = parseFloat(value);
-                
-                settings[row.setting_key] = value;
-            });
+                // Convert to object format with camelCase keys
+                const settings = {};
+                rows.forEach(row => {
+                    let value = row.setting_value;
+                    
+                    // Parse boolean values
+                    if (value === 'true') value = true;
+                    else if (value === 'false') value = false;
+                    // Parse numeric values
+                    else if (!isNaN(value) && value !== '') value = parseFloat(value);
+                    
+                    // Convert snake_case to camelCase
+                    const camelKey = row.setting_key.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+                    settings[camelKey] = value;
+                });
 
-            res.json({
-                success: true,
-                data: settings
+                res.json({
+                    success: true,
+                    data: settings
+                });
             });
         } catch (error) {
             console.error('Error in getSettings controller:', error);
@@ -59,25 +67,33 @@ class SettingsController {
                 });
             }
 
+            // Convert camelCase to snake_case for database storage
+            const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+
             // Convert value to string for storage
             const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
 
             // Update or insert setting
-            await pool.execute(`
-                INSERT INTO user_settings (setting_key, setting_value) 
-                VALUES (?, ?) 
-                ON DUPLICATE KEY UPDATE 
-                setting_value = VALUES(setting_value), 
-                updated_at = CURRENT_TIMESTAMP
-            `, [key, stringValue]);
+            db.run(`
+                INSERT OR REPLACE INTO user_settings (setting_key, setting_value, updated_at) 
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+            `, [dbKey, stringValue], function(err) {
+                if (err) {
+                    console.error('Error in updateSetting controller:', err);
+                    return res.status(500).json({
+                        error: 'Failed to update setting',
+                        details: err.message
+                    });
+                }
 
-            res.json({
-                success: true,
-                data: {
-                    key,
-                    value
-                },
-                message: 'Setting updated successfully'
+                res.json({
+                    success: true,
+                    data: {
+                        key,
+                        value
+                    },
+                    message: 'Setting updated successfully'
+                });
             });
         } catch (error) {
             console.error('Error in updateSetting controller:', error);
@@ -102,36 +118,37 @@ class SettingsController {
                 });
             }
 
-            const connection = await pool.getConnection();
-            
-            try {
-                await connection.beginTransaction();
+            // Update each setting
+            let completed = 0;
+            const totalSettings = Object.keys(settings).length;
 
-                // Update each setting
-                for (const [key, value] of Object.entries(settings)) {
-                    const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-                    
-                    await connection.execute(`
-                        INSERT INTO user_settings (setting_key, setting_value) 
-                        VALUES (?, ?) 
-                        ON DUPLICATE KEY UPDATE 
-                        setting_value = VALUES(setting_value), 
-                        updated_at = CURRENT_TIMESTAMP
-                    `, [key, stringValue]);
-                }
+            for (const [key, value] of Object.entries(settings)) {
+                const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+                
+                // Convert camelCase to snake_case for database storage
+                const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+                
+                db.run(`
+                    INSERT OR REPLACE INTO user_settings (setting_key, setting_value, updated_at) 
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                `, [dbKey, stringValue], function(err) {
+                    if (err) {
+                        console.error('Error in updateSettings controller:', err);
+                        return res.status(500).json({
+                            error: 'Failed to update settings',
+                            details: err.message
+                        });
+                    }
 
-                await connection.commit();
-
-                res.json({
-                    success: true,
-                    data: settings,
-                    message: 'Settings updated successfully'
+                    completed++;
+                    if (completed === totalSettings) {
+                        res.json({
+                            success: true,
+                            data: settings,
+                            message: 'Settings updated successfully'
+                        });
+                    }
                 });
-            } catch (error) {
-                await connection.rollback();
-                throw error;
-            } finally {
-                connection.release();
             }
         } catch (error) {
             console.error('Error in updateSettings controller:', error);
@@ -154,34 +171,44 @@ class SettingsController {
                 ['pro_mode', 'false']
             ];
 
-            const connection = await pool.getConnection();
-            
-            try {
-                await connection.beginTransaction();
-
-                // Clear existing settings
-                await connection.execute('DELETE FROM user_settings');
-
-                // Insert default settings
-                for (const [key, value] of defaultSettings) {
-                    await connection.execute(
-                        'INSERT INTO user_settings (setting_key, setting_value) VALUES (?, ?)',
-                        [key, value]
-                    );
+            // Clear existing settings
+            db.run('DELETE FROM user_settings', function(err) {
+                if (err) {
+                    console.error('Error in resetSettings controller:', err);
+                    return res.status(500).json({
+                        error: 'Failed to reset settings',
+                        details: err.message
+                    });
                 }
 
-                await connection.commit();
+                // Insert default settings
+                let completed = 0;
+                const totalSettings = defaultSettings.length;
 
-                res.json({
-                    success: true,
-                    message: 'Settings reset to default values'
-                });
-            } catch (error) {
-                await connection.rollback();
-                throw error;
-            } finally {
-                connection.release();
-            }
+                for (const [key, value] of defaultSettings) {
+                    db.run(
+                        'INSERT INTO user_settings (setting_key, setting_value) VALUES (?, ?)',
+                        [key, value],
+                        function(err) {
+                            if (err) {
+                                console.error('Error in resetSettings controller:', err);
+                                return res.status(500).json({
+                                    error: 'Failed to reset settings',
+                                    details: err.message
+                                });
+                            }
+
+                            completed++;
+                            if (completed === totalSettings) {
+                                res.json({
+                                    success: true,
+                                    message: 'Settings reset to default values'
+                                });
+                            }
+                        }
+                    );
+                }
+            });
         } catch (error) {
             console.error('Error in resetSettings controller:', error);
             res.status(500).json({
@@ -205,31 +232,39 @@ class SettingsController {
                 });
             }
 
-            const [rows] = await pool.execute(
-                'SELECT setting_value FROM user_settings WHERE setting_key = ?',
-                [key]
-            );
+            // Convert camelCase to snake_case for database lookup
+            const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
 
-            if (rows.length === 0) {
-                return res.status(404).json({
-                    error: 'Setting not found'
-                });
-            }
-
-            let value = rows[0].setting_value;
-            
-            // Parse boolean values
-            if (value === 'true') value = true;
-            else if (value === 'false') value = false;
-            // Parse numeric values
-            else if (!isNaN(value) && value !== '') value = parseFloat(value);
-
-            res.json({
-                success: true,
-                data: {
-                    key,
-                    value
+            db.get('SELECT setting_value FROM user_settings WHERE setting_key = ?', [dbKey], (err, row) => {
+                if (err) {
+                    console.error('Error in getSetting controller:', err);
+                    return res.status(500).json({
+                        error: 'Failed to get setting',
+                        details: err.message
+                    });
                 }
+
+                if (!row) {
+                    return res.status(404).json({
+                        error: 'Setting not found'
+                    });
+                }
+
+                let value = row.setting_value;
+                
+                // Parse boolean values
+                if (value === 'true') value = true;
+                else if (value === 'false') value = false;
+                // Parse numeric values
+                else if (!isNaN(value) && value !== '') value = parseFloat(value);
+
+                res.json({
+                    success: true,
+                    data: {
+                        key,
+                        value
+                    }
+                });
             });
         } catch (error) {
             console.error('Error in getSetting controller:', error);
